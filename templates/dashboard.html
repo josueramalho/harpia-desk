@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoxyDeck - Dashboard</title>
+    
+    <!-- CSS do Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Outros CSS (Font Awesome, Cropper) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
+    
+    <!-- Nosso CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Biblioteca de Drag-and-Drop (DEFER para não bloquear renderização) -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js" defer></script>
+</head>
+<body class="bg-body-tertiary">
+
+    <div class="container-fluid mt-3">
+        
+        <!-- Sistema de Abas (Tabs) do Bootstrap -->
+        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="painel-tab" data-bs-toggle="tab" data-bs-target="#painel-tab-pane" type="button" role="tab" aria-controls="painel-tab-pane" aria-selected="true">
+                    <i class="fa-solid fa-table-cells"></i> Painel Principal
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="live-tab" data-bs-toggle="tab" data-bs-target="#live-tab-pane" type="button" role="tab" aria-controls="live-tab-pane" aria-selected="false">
+                    <i class="fa-solid fa-tower-broadcast"></i> Configurações da Live
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#config-tab-pane" type="button" role="tab" aria-controls="config-tab-pane" aria-selected="false">
+                    <i class="fa-solid fa-sliders"></i> Configurações do Painel
+                </button>
+            </li>
+            <li class="nav-item ms-auto">
+                <a href="/logout" class="nav-link text-danger">
+                    <i class="fa-solid fa-right-from-bracket"></i> Sair
+                </a>
+            </li>
+        </ul>
+
+        <!-- Conteúdo das Abas -->
+        <div class="tab-content pt-3" id="mainTabsContent">
+            
+            <!-- ABA 1: Painel Principal (Deck, Stats, Chat, Feed) -->
+            <div class="tab-pane fade show active" id="painel-tab-pane" role="tabpanel" aria-labelledby="painel-tab" tabindex="0">
+                <div class="row g-3">
+                    <!-- Coluna do Stream Deck e Stats -->
+                    <div class="col-lg-7">
+                        <div class="panel" id="streamdeck-panel">
+                            <div class="panel-header">
+                                <h3>Stream Deck</h3>
+                                <button id="edit-deck-button-main" class="btn btn-sm btn-outline-warning" title="Modo de Edição">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                            </div>
+                            <div id="obs-status-message" class="alert alert-secondary">Conectando ao OBS...</div>
+                            
+                            <div class="streamdeck-grid" id="streamdeck-grid">
+                                <!-- Botões serão gerados aqui pelo script.js -->
+                            </div>
+                        </div>
+                        
+                        <div id="stats-panel" class="panel mt-3">
+                            <h3>Estatísticas</h3>
+                            <div id="stats-grid">
+                                <div class="stat-box" id="status-box">
+                                    <h4>Status</h4>
+                                    <p>...</p>
+                                </div>
+                                <div class="stat-box" id="viewers-box">
+                                    <h4>Espectadores</h4>
+                                    <p>0</p>
+                                </div>
+                                <div class="stat-box" id="uptime-box">
+                                    <h4>Tempo no Ar</h4>
+                                    <p>00:00:00</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Colunas do Chat e Feed -->
+                    <div class="col-lg-5">
+                        <div class="panel" id="chat-panel">
+                            <iframe
+                                class="twitch-chat-iframe"
+                                src="https://www.twitch.tv/embed/{{ twitch_nickname }}/chat?parent={{ parent_host }}&darkpopout"
+                                frameborder="0"
+                                scrolling="no">
+                            </iframe>
+                        </div>
+                        <div class="panel mt-3" id="activity-feed-panel">
+                            <h3>Feed de Atividades</h3>
+                            <div id="activity-feed-box">
+                                <!-- Atividades serão injetadas aqui -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 2: Configurações da Live (Twitch) -->
+            <div class="tab-pane fade" id="live-tab-pane" role="tabpanel" aria-labelledby="live-tab" tabindex="0">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div id="twitch-controls-panel" class="panel">
+                            <h3>Controle da Live (Twitch)</h3>
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Título:</label>
+                                <input type="text" id="title" class="form-control" placeholder="Carregando...">
+                            </div>
+                            <div class="mb-3">
+                                <label for="game-search" class="form-label">Mudar Categoria:</label>
+                                <input type="text" id="game-search" class="form-control" placeholder="Buscar nova categoria...">
+                                <div id="game-search-results"></div>
+                                <div class="form-text">Categoria Atual: <b id="current-category">Carregando...</b></div>
+                            </div>
+                            <button id="update-button" class="btn btn-primary">Atualizar Informações</button>
+                            <span id="update-status" class="ms-2" style="display: none;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 3: Configurações do Painel -->
+            <div class="tab-pane fade" id="config-tab-pane" role="tabpanel" aria-labelledby="config-tab" tabindex="0">
+                <div class="panel">
+                    <h3>Configurações do Painel</h3>
+                    <div id="obs-status-message-config" class="alert alert-secondary">Conectando ao OBS...</div>
+                    <hr>
+                    <h5>Aparência do Deck</h5>
+                    
+                    <div class="form-check form-switch fs-5">
+                        <input class="form-check-input" type="checkbox" role="switch" id="show-labels-toggle" checked>
+                        <label class="form-check-label" for="show-labels-toggle">Mostrar Rótulos nos Botões</label>
+                    </div>
+                    
+                    <hr>
+                    <h5>Editar Deck</h5>
+                    <p>Ative o "Modo de Edição" para adicionar, remover ou editar os botões no Painel Principal.</p>
+                    <button id="edit-deck-button-config" class="btn btn-warning" title="Modo de Edição">
+                        <i class="fa-solid fa-pen-to-square"></i> Ativar Modo de Edição
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    
+    <!-- O MODAL DE EDIÇÃO -->
+    <div class="modal fade" id="edit-modal" tabindex="-1" aria-labelledby="modal-title" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered"> <!-- Modal extra-grande -->
+            <div class="modal-content">
+                <form id="edit-button-form">
+                    <div class="modal-header">
+                        <h3 class="modal-title fs-5" id="modal-title">Editar Botão</h3>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <input type="hidden" id="slot-id-input">
+                        
+                        <div class="row">
+                            <!-- Coluna da Esquerda: Aparência e Configs -->
+                            <div class="col-md-5">
+                                <h5>Aparência</h5>
+                                <div class="mb-3">
+                                    <label for="button-label" class="form-label">Rótulo (Texto)</label>
+                                    <input type="text" id="button-label" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Ícone ou Imagem</label>
+                                    <div class="image-source-selector">
+                                        <button type="button" class="tab-button active" data-tab="icon">Ícone</button>
+                                        <button type="button" class="tab-button" data-tab="link">Link</button>
+                                        <button type="button" class="tab-button" data-tab="upload">Upload</button>
+                                    </div>
+                                    <div id="icon-tab" class="tab-content active mt-2"><input type="text" id="button-icon" class="form-control" placeholder="fa-solid fa-video"></div>
+                                    <div id="link-tab" class="tab-content mt-2"><input type="text" id="button-image-link" class="form-control" placeholder="https://exemplo.com/imagem.png"></div>
+                                    <div id="upload-tab" class="tab-content mt-2"><input type="file" id="button-image-upload" class="form-control" accept="image/*"></div>
+                                </div>
+                                <div id="cropper-container" style="display: none;">
+                                    <p>Recorte a imagem para um quadrado:</p>
+                                    <img id="image-to-crop" style="max-width: 100%;">
+                                </div>
+                                <hr>
+                                <h5>Comportamento</h5>
+                                <div class="form-check form-switch fs-5 mb-3">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="button-is-stateful">
+                                    <label class="form-check-label" for="button-is-stateful">Botão de Estado (Liga/Desliga)</label>
+                                </div>
+                            </div>
+
+                            <!-- Coluna da Direita: Ações (Sem Abas) -->
+                            <div class="col-md-7">
+                                
+                                <!-- Painel de Ação ON -->
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h5 class="mb-0">Ações (ON / Pressionar)</h5>
+                                        <button type="button" class="btn btn-sm btn-success add-action-button" data-action-list="on">
+                                            <i class="fa-solid fa-plus"></i> Adicionar Ação
+                                        </button>
+                                    </div>
+                                    <div class="action-list" id="action-list-on">
+                                        <!-- Ações ON serão adicionadas aqui pelo JS -->
+                                    </div>
+                                </div>
+                                
+                                <!-- Painel de Ação OFF (Escondido por padrão) -->
+                                <div id="action-off-container" style="display: none;">
+                                    <hr class="my-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h5 class="mb-0">Ações (OFF / Soltar)</h5>
+                                        <button type="button" class="btn btn-sm btn-success add-action-button" data-action-list="off">
+                                            <i class="fa-solid fa-plus"></i> Adicionar Ação
+                                        </button>
+                                    </div>
+                                    <div class="action-list" id="action-list-off">
+                                        <!-- Ações OFF serão adicionadas aqui pelo JS -->
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" id="delete-button" class="btn btn-danger me-auto">Deletar Botão</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" id="save-button" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Oculto para o formulário de Ação -->
+    <template id="action-template">
+        <div class="action-card card bg-secondary mb-2">
+            <div class="card-header d-flex justify-content-between align-items-center p-2">
+                <span class="action-title fw-bold">Nova Ação</span>
+                <button type="button" class="btn-close btn-sm remove-action-button" aria-label="Remove"></button>
+            </div>
+            <div class="card-body p-3">
+                <div class="mb-3">
+                    <label class="form-label">Tipo de Ação</label>
+                    <select class="form-select form-select-sm action-type-select">
+                        <option value="">-- Selecione uma Ação --</option>
+                        <!-- Dropdown será populado pelo script.js -->
+                    </select>
+                </div>
+
+                <!-- Parâmetros (versão template) -->
+                <div class="action-params-template">
+                    
+                    <div class="action-params" data-param-for="obs_scene">
+                        <div class="mb-3">
+                            <label class="form-label">Selecione a Cena</label>
+                            <select class="form-select form-select-sm param-scene-name">
+                                <option value="">-- Carregando... --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="action-params" data-param-for="obs_source">
+                        <div class="mb-3">
+                            <label class="form-label">Selecione a Cena</label>
+                            <select class="form-select form-select-sm param-source-scene">
+                                <option value="">-- Carregando... --</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Selecione a Fonte</label>
+                            <select class="form-select form-select-sm param-source-name">
+                                <option value="">-- Selecione uma cena --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="action-params" data-param-for="vts_hotkey">
+                        <div class="mb-3">
+                            <label class="form-label">Selecione a Hotkey</label>
+                            <select class="form-select form-select-sm param-vts-hotkey-id">
+                                <option value="">-- Carregando... --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="action-params" data-param-for="obs_set_mute_on">
+                        <div class="mb-3">
+                            <label class="form-label">Selecione a Entrada de Áudio</label>
+                            <select class="form-select form-select-sm param-audio-input-name">
+                                <option value="">-- Carregando Áudio... --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="action-params" data-param-for="obs_set_mute_off">
+                        <div class="mb-3">
+                            <label class="form-label">Selecione a Entrada de Áudio</label>
+                            <select class="form-select form-select-sm param-audio-input-name">
+                                <option value="">-- Carregando Áudio... --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="action-params" data-param-for="sound">
+                        <div class="mb-3">
+                            <label class="form-label">Nome do Arquivo</label>
+                            <input type="text" class="form-control form-control-sm param-file-name" placeholder="som.mp3">
+                        </div>
+                    </div>
+                    
+                    <!-- Parâmetros para Ação 'open_deck' -->
+                    <div class="action-params" data-param-for="open_deck">
+                        <div class="mb-3">
+                            <label class="form-label">ID da Pasta (Deck)</label>
+                            <input type="text" class="form-control form-control-sm param-deck-id" placeholder="ex: pasta_obs">
+                            <div class="form-text">
+                                Crie um botão de "Voltar" nesta pasta com o ID: <strong>root</strong>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-params" data-param-for="hotkey">
+                        <div class="form-group">
+                            <label class="form-label">Construtor de Hotkey</label>
+                            <div class="input-group">
+                                <select class="form-select form-select-sm add-hotkey-select">
+                                    <option value="">-- Adicionar Tecla --</option>
+                                </select>
+                                <button type="button" class="btn btn-outline-danger btn-sm clear-hotkey-button" title="Limpar Teclas">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                            <div class="hotkey-display-area mt-2">
+                                <!-- Teclas (pills) aparecerão aqui -->
+                            </div>
+                            <input type="hidden" class="param-keys-str">
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </template>
+
+
+    <!-- ORDEM DE SCRIPT CORRETA -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

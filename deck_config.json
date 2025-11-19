@@ -1,0 +1,263 @@
+{
+    "decks": {
+        "root": {
+            "slot-0": {
+                "actions_off": [],
+                "actions_on": [
+                    {
+                        "params": {},
+                        "type": "obs_stream_toggle"
+                    }
+                ],
+                "icon": "https://png.pngtree.com/png-clipart/20210319/ourmid/pngtree-live-icon-tiktok-png-image_3083001.jpg",
+                "is_stateful": false,
+                "label": "ABRIR LIVE"
+            },
+            "slot-1": {
+                "label": "Webcam",
+                "icon": "https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvdjkzMi1uaW5nLTYzLXguanBn.jpg",
+                "is_stateful": false,
+                "actions_on": [
+                    {
+                        "type": "obs_source",
+                        "params": {
+                            "scene_name": "tela da anny",
+                            "source_name": "Video Capture Device"
+                        }
+                    }
+                ],
+                "actions_off": []
+            },
+            "slot-2": {
+                "actions_off": [],
+                "actions_on": [
+                    {
+                        "params": {
+                            "file_name": "bip.mp3"
+                        },
+                        "type": "sound"
+                    }
+                ],
+                "icon": "fa-solid fa-hands-clapping",
+                "is_stateful": false,
+                "label": "BIP"
+            },
+            "slot-3": {
+                "actions_off": [],
+                "actions_on": [
+                    {
+                        "params": {
+                            "keys_str": "ctrl+shift+1"
+                        },
+                        "type": "hotkey"
+                    }
+                ],
+                "icon": "fa-solid fa-keyboard",
+                "is_stateful": false,
+                "label": "Clip"
+            },
+            "slot-4": {
+                "actions_off": [],
+                "actions_on": [
+                    {
+                        "params": {},
+                        "type": "obs_stream_toggle"
+                    }
+                ],
+                "icon": "fa-solid fa-satellite-dish",
+                "is_stateful": false,
+                "label": "ON/OFF LIVE"
+            },
+            "slot-5": {
+                "actions_off": [],
+                "actions_on": [
+                    {
+                        "params": {},
+                        "type": "obs_record_toggle"
+                    }
+                ],
+                "icon": "fa-solid fa-circle-dot",
+                "is_stateful": false,
+                "label": "ON/OFF GRAVANDO"
+            },
+            "slot-6": {
+                "actions_off": [
+                    {
+                        "params": {
+                            "scene_name": "tela da anny",
+                            "source_name": "Video Capture Device"
+                        },
+                        "type": "obs_source"
+                    }
+                ],
+                "actions_on": [
+                    {
+                        "params": {
+                            "scene_name": "tela da anny",
+                            "source_name": "Video Capture Device"
+                        },
+                        "type": "obs_source"
+                    }
+                ],
+                "icon": "",
+                "is_stateful": true,
+                "label": "aaaaa"
+            },
+            "slot-7": {
+                "actions_off": [],
+                "actions_on": [
+                    {
+                        "params": {
+                            "scene_name": "ja volto anny"
+                        },
+                        "type": "obs_scene"
+                    }
+                ],
+                "icon": "",
+                "is_stateful": false,
+                "label": "volto ja"
+            },
+            "slot-8": {
+                "actions_off": [],
+                "actions_on": [
+                    {
+                        "params": {
+                            "scene_name": "tela da anny"
+                        },
+                        "type": "obs_scene"
+                    }
+                ],
+                "icon": "/uploads/1762142534_cropped.png",
+                "is_stateful": false,
+                "label": "Tirar \u00d3culos"
+            },
+            "slot-9": {
+                "actions_off": [],
+                "actions_on": [
+                    {
+                        "params": {
+                            "hotkey_id": "ee580610e8d54d37bee7eb2568820d3a"
+                        },
+                        "type": "vts_hotkey"
+                    }
+                ],
+                "icon": "",
+                "is_stateful": false,
+                "label": "HMM"
+            },
+            "slot-10": {
+                "actions_off": [],
+                "actions_on": [
+                    {
+                        "params": {
+                            "file_name": "amondesgas.mp3"
+                        },
+                        "type": "sound"
+                    }
+                ],
+                "icon": "https://i.pinimg.com/736x/ba/c7/b8/bac7b82ac73be470880886e818e3c694.jpg",
+                "is_stateful": false,
+                "label": "Amondegas"
+            },
+            "slot-11": {
+                "actions_off": [],
+                "actions_on": [
+                    {
+                        "params": {
+                            "file_name": "netdiscada.mp3"
+                        },
+                        "type": "sound"
+                    }
+                ],
+                "icon": "https://i.pinimg.com/1200x/98/c3/95/98c3954adbaea5e791715360812f3ef3.jpg",
+                "is_stateful": false,
+                "label": "MODEM"
+            },
+            "slot-12": {
+                "actions_off": [],
+                "actions_on": [
+                    {
+                        "params": {
+                            "file_name": "ibelieve.mp3"
+                        },
+                        "type": "sound"
+                    }
+                ],
+                "icon": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSinWyogf9WiwxfyYL-dNKdyjmMSOVFLkEYRQ&s",
+                "is_stateful": false,
+                "label": "EU ACREDITO"
+            },
+            "slot-13": {
+                "actions_off": [],
+                "actions_on": [
+                    {
+                        "params": {
+                            "deck_id": "deck_1763437322324"
+                        },
+                        "type": "open_deck"
+                    }
+                ],
+                "icon": "",
+                "is_stateful": false,
+                "label": "OBS"
+            },
+            "slot-14": {
+                "actions_off": [],
+                "actions_on": [
+                    {
+                        "params": {
+                            "scene_name": "",
+                            "source_name": ""
+                        },
+                        "type": "obs_source"
+                    }
+                ],
+                "icon": "",
+                "is_stateful": false,
+                "label": "a"
+            }
+        },
+        "deck_1763437322324": {
+            "slot-0": {
+                "label": "Voltar",
+                "icon": "fa-solid fa-arrow-left",
+                "is_stateful": false,
+                "actions_on": [
+                    {
+                        "type": "open_deck",
+                        "params": {
+                            "deck_id": "root"
+                        }
+                    }
+                ],
+                "actions_off": []
+            },
+            "slot-1": {
+                "label": "AAAAA",
+                "icon": "fa-solid fa-video",
+                "is_stateful": true,
+                "actions_on": [
+                    {
+                        "type": "obs_source",
+                        "params": {
+                            "scene_name": "tela da anny",
+                            "source_name": "Video Capture Device"
+                        }
+                    }
+                ],
+                "actions_off": [
+                    {
+                        "type": "obs_source",
+                        "params": {
+                            "scene_name": "tela da anny",
+                            "source_name": "Video Capture Device"
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "settings": {
+        "start_deck": "root"
+    }
+}

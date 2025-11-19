@@ -1,0 +1,11 @@
+flask
+flask_session
+flask-socketio
+eventlet  # Servidor assíncrono para SocketIO
+requests
+websocket-client  # Para o cliente de chat IRC da Twitch
+python-dotenv  # <-- Adicione esta linha
+obs-websocket-py
+pygame  # <-- Adicione esta linha
+pynput  # <-- Adicione esta linha
+cryptography
