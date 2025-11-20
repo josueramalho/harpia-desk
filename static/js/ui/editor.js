@@ -5,6 +5,7 @@ const modalElement = document.getElementById('edit-modal');
 const modal = new bootstrap.Modal(modalElement);
 let currentSlotId = null;
 let cropper = null;
+let originalFile = null; // Armazena o arquivo original para GIFs
 
 export function initEditor() {
     // Toggle Edit Mode
@@ -19,16 +20,41 @@ export function initEditor() {
         });
     });
 
-    // Form Listeners
+    // Lógica de Abas
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            button.classList.add('active');
+            
+            const tabId = button.dataset.tab;
+            const content = document.getElementById(`${tabId}-tab`);
+            if (content) content.classList.add('active');
+
+            if (tabId !== 'upload' && cropper) {
+                destroyCropper();
+            }
+        });
+    });
+
+    // Listeners
     document.getElementById('save-button').onclick = saveButtonConfig;
     document.getElementById('delete-button').onclick = deleteButtonConfig;
-    
-    // Image Upload
     document.getElementById('button-image-upload').addEventListener('change', handleImageUpload);
     
-    // Action Buttons
     document.querySelector('.add-action-button[data-action-list="on"]').onclick = () => createActionCard('on');
     document.querySelector('.add-action-button[data-action-list="off"]').onclick = () => createActionCard('off');
+}
+
+function destroyCropper() {
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+    }
+    document.getElementById('cropper-container').style.display = 'none';
+    document.getElementById('image-to-crop').src = '';
+    originalFile = null;
 }
 
 export function openEditModal(slotId, config) {
@@ -37,16 +63,15 @@ export function openEditModal(slotId, config) {
     document.getElementById('action-list-on').innerHTML = '';
     document.getElementById('action-list-off').innerHTML = '';
     
-    // Reset imagem e cropper
-    document.getElementById('cropper-container').style.display = 'none';
-    if(cropper) { cropper.destroy(); cropper = null; }
+    destroyCropper(); // Limpa estado anterior
+
+    document.querySelector('.tab-button[data-tab="icon"]').click();
 
     if (config) {
         document.getElementById('modal-title').textContent = "Editar Botão";
         document.getElementById('button-label').value = config.label || '';
         document.getElementById('button-is-stateful').checked = config.is_stateful || false;
         
-        // Se tiver ícone
         if (config.icon) {
             if (config.icon.startsWith('http') || config.icon.startsWith('/uploads')) {
                 document.querySelector('.tab-button[data-tab="link"]').click();
@@ -67,10 +92,118 @@ export function openEditModal(slotId, config) {
     modal.show();
 }
 
+// --- LÓGICA DE SALVAMENTO (Com suporte a GIF) ---
+async function saveButtonConfig() {
+    const saveBtn = document.getElementById('save-button');
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Salvando...";
+
+    try {
+        let finalIconValue = "";
+        const activeTab = document.querySelector('.tab-button.active').dataset.tab;
+
+        if (activeTab === 'link') {
+            finalIconValue = document.getElementById('button-image-link').value;
+        } else if (activeTab === 'icon') {
+            finalIconValue = document.getElementById('button-icon').value;
+        } else if (activeTab === 'upload') {
+            
+            // Caso GIF: Envia o arquivo original sem processar
+            if (originalFile && originalFile.type === 'image/gif') {
+                const formData = new FormData();
+                formData.append('croppedImage', originalFile); // Backend aceita 'croppedImage' como nome do campo
+                
+                const response = await fetchApi('/api/upload_image', {
+                    method: 'POST',
+                    body: formData
+                });
+                finalIconValue = response.url;
+            } 
+            // Caso Outros (PNG/JPG): Usa o canvas do Cropper
+            else if (cropper) {
+                const canvas = cropper.getCroppedCanvas({ width: 128, height: 128 });
+                if (canvas) {
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                    const formData = new FormData();
+                    formData.append('croppedImage', blob, 'cropped.png');
+
+                    const response = await fetchApi('/api/upload_image', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    finalIconValue = response.url;
+                }
+            }
+        }
+
+        const config = {
+            label: document.getElementById('button-label').value,
+            is_stateful: document.getElementById('button-is-stateful').checked,
+            actions_on: readActionsFromList('action-list-on'),
+            actions_off: readActionsFromList('action-list-off'),
+            icon: finalIconValue
+        };
+
+        await fetchApi('/api/save_button', {
+            method: 'POST',
+            body: JSON.stringify({
+                slot_id: currentSlotId,
+                deck_id: store.get('currentDeckId'),
+                config
+            })
+        });
+        
+        modal.hide();
+    } catch(e) { 
+        alert("Erro ao salvar: " + e.message); 
+        console.error(e);
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Salvar";
+    }
+}
+
+function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if(!file) return;
+
+    originalFile = file; // Guarda referência para usar no save se for GIF
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+        const img = document.getElementById('image-to-crop');
+        img.src = evt.target.result;
+        const container = document.getElementById('cropper-container');
+        
+        if(cropper) cropper.destroy();
+
+        if (file.type === 'image/gif') {
+            // Se for GIF, mostra apenas o preview sem inicializar o Cropper
+            container.style.display = 'block';
+            // Adiciona aviso visual que GIF não será recortado
+            if (!document.getElementById('gif-warning')) {
+                const warning = document.createElement('p');
+                warning.id = 'gif-warning';
+                warning.className = 'text-warning small';
+                warning.textContent = 'GIFs animados não podem ser recortados e serão salvos como estão.';
+                container.insertBefore(warning, img);
+            }
+        } else {
+            // Se for imagem estática, inicializa Cropper
+            const warning = document.getElementById('gif-warning');
+            if(warning) warning.remove();
+            
+            container.style.display = 'block';
+            cropper = new Cropper(img, { aspectRatio: 1, viewMode: 1 });
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+// ... Funções auxiliares (mantidas iguais) ...
 function createActionCard(listType, actionConfig = null) {
     const listId = listType === 'on' ? 'action-list-on' : 'action-list-off';
     const container = document.getElementById(listId);
-    
     const template = document.getElementById('action-template').content.cloneNode(true);
     const card = template.querySelector('.action-card');
     const select = card.querySelector('.action-type-select');
@@ -81,10 +214,8 @@ function createActionCard(listType, actionConfig = null) {
     select.addEventListener('change', () => {
         paramsContainer.querySelectorAll('.action-params').forEach(p => p.style.display = 'none');
         const activeParams = paramsContainer.querySelector(`.action-params[data-param-for="${select.value}"]`);
-        
         if (activeParams) {
             activeParams.style.display = 'block';
-            // Se mudou o tipo manualmente, limpa params. Se veio do config, popula.
             const currentParams = (actionConfig && actionConfig.type === select.value) ? actionConfig.params : {};
             hydrateParams(select.value, activeParams, currentParams);
         }
@@ -122,130 +253,55 @@ function populateActionTypes(select) {
 }
 
 function hydrateParams(type, container, params = {}) {
-    // --- OBS SCENES ---
     if (type === 'obs_scene' || type === 'obs_source') {
         const sceneSelect = container.querySelector('.param-scene-name') || container.querySelector('.param-source-scene');
         const sceneList = store.get('obsScenes') || [];
-        
-        // Popula Cenas
         populateSelect(sceneSelect, sceneList.map(s => ({ value: s.name, label: s.name })), params?.scene_name);
 
-        // Lógica especial para Fontes (dependente da cena)
         if (type === 'obs_source') {
             const sourceSelect = container.querySelector('.param-source-name');
-            
             const updateSources = (sceneName) => {
                 const sceneData = sceneList.find(s => s.name === sceneName);
                 const sources = sceneData ? sceneData.sources : [];
-                // Passamos o params.source_name apenas se for a cena salva, senão reseta
                 const valToSelect = (sceneName === params?.scene_name) ? params?.source_name : '';
-                
                 populateSelect(sourceSelect, sources.map(s => ({ value: s.name, label: s.name })), valToSelect);
             };
-
-            // Listener para mudar fontes quando mudar cena
             sceneSelect.onchange = () => updateSources(sceneSelect.value);
-            
-            // Inicializa
             updateSources(params?.scene_name);
         }
     }
-    
-    // --- OBS AUDIO ---
     if (type === 'obs_set_mute_on' || type === 'obs_set_mute_off') {
         const audioSelect = container.querySelector('.param-audio-input-name');
         const audioList = store.get('obsAudioSources') || [];
         populateSelect(audioSelect, audioList.map(a => ({ value: a.name, label: a.name })), params?.input_name);
     }
-    
-    // --- VTS HOTKEYS ---
     if (type === 'vts_hotkey') {
         const select = container.querySelector('.param-vts-hotkey-id');
         const vtsList = store.get('vtsHotkeys') || [];
         populateSelect(select, vtsList.map(h => ({ value: h.hotkeyID, label: `${h.name} (${h.type})` })), params?.hotkey_id);
     }
-    
-    // --- CAMPOS DE TEXTO SIMPLES ---
-    if (params?.file_name) {
-        const inp = container.querySelector('.param-file-name');
-        if (inp) inp.value = params.file_name;
-    }
-    if (params?.keys_str) {
-         const inp = container.querySelector('.param-keys-str');
-         if (inp) inp.value = params.keys_str;
-         // Aqui você poderia chamar a função de renderizar as pílulas visuais das hotkeys
-    }
-    if (params?.deck_id) {
-        const inp = container.querySelector('.param-deck-id');
-        if (inp) inp.value = params.deck_id;
-    }
+    if (params?.file_name) { const inp = container.querySelector('.param-file-name'); if (inp) inp.value = params.file_name; }
+    if (params?.keys_str) { const inp = container.querySelector('.param-keys-str'); if (inp) inp.value = params.keys_str; }
+    if (params?.deck_id) { const inp = container.querySelector('.param-deck-id'); if (inp) inp.value = params.deck_id; }
 }
 
-// --- A CORREÇÃO MÁGICA ESTÁ AQUI ---
 function populateSelect(selectElement, items, selectedValue) {
     if (!selectElement) return;
-    
     selectElement.innerHTML = '<option value="">-- Selecione --</option>';
-    
-    // 1. Adiciona itens disponíveis (da conexão ao vivo)
     items.forEach(item => {
         const opt = new Option(item.label, item.value);
         selectElement.add(opt);
     });
-
-    // 2. Se tiver um valor salvo...
     if (selectedValue) {
-        // Verifica se ele já está na lista
         const exists = Array.from(selectElement.options).some(opt => opt.value === selectedValue);
-        
-        // 3. Se NÃO estiver na lista (ex: OBS desconectado), cria a "Opção Fantasma"
         if (!exists) {
             const label = `[Salvo] ${selectedValue}`; 
             const opt = new Option(label, selectedValue);
-            // Opcional: Adicionar estilo visual para indicar que está offline/salvo
             opt.style.color = 'orange'; 
             selectElement.add(opt);
         }
-        
-        // 4. Seleciona o valor
         selectElement.value = selectedValue;
     }
-}
-
-async function saveButtonConfig() {
-    const config = {
-        label: document.getElementById('button-label').value,
-        is_stateful: document.getElementById('button-is-stateful').checked,
-        actions_on: readActionsFromList('action-list-on'),
-        actions_off: readActionsFromList('action-list-off'),
-        // Verifica qual aba de imagem está ativa
-        icon: getIconValue()
-    };
-
-    try {
-        await fetchApi('/api/save_button', {
-            method: 'POST',
-            body: JSON.stringify({
-                slot_id: currentSlotId,
-                deck_id: store.get('currentDeckId'),
-                config
-            })
-        });
-        modal.hide();
-    } catch(e) { alert("Erro ao salvar: " + e.message); }
-}
-
-function getIconValue() {
-    // Lógica simples para pegar ícone baseado na aba ativa
-    const activeTab = document.querySelector('.tab-button.active');
-    if (activeTab && activeTab.dataset.tab === 'link') {
-        return document.getElementById('button-image-link').value;
-    } else if (activeTab && activeTab.dataset.tab === 'icon') {
-        return document.getElementById('button-icon').value;
-    }
-    // Para upload, assumimos que o upload já retornou URL e foi colocado em algum lugar,
-    // ou usamos a lógica do seu script original de tratar o upload separadamente.
-    return document.getElementById('button-icon').value; // Fallback
 }
 
 function readActionsFromList(listId) {
@@ -253,15 +309,12 @@ function readActionsFromList(listId) {
     document.getElementById(listId).querySelectorAll('.action-card').forEach(card => {
         const type = card.querySelector('.action-type-select').value;
         if(!type) return;
-        
         const paramsContainer = card.querySelector(`.action-params[data-param-for="${type}"]`);
         const params = {};
-        
         paramsContainer.querySelectorAll('input, select').forEach(input => {
             const key = input.className.split(' ').find(c => c.startsWith('param-'))?.replace('param-', '').replace(/-/g, '_');
             if(key) params[key] = input.value;
         });
-        
         actions.push({ type, params });
     });
     return actions;
@@ -274,19 +327,4 @@ async function deleteButtonConfig() {
         body: JSON.stringify({ slot_id: currentSlotId, deck_id: store.get('currentDeckId') })
     });
     modal.hide();
-}
-
-function handleImageUpload(e) {
-    const file = e.target.files[0];
-    if(file) {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            const img = document.getElementById('image-to-crop');
-            img.src = evt.target.result;
-            document.getElementById('cropper-container').style.display = 'block';
-            if(cropper) cropper.destroy();
-            cropper = new Cropper(img, { aspectRatio: 1, viewMode: 1 });
-        };
-        reader.readAsDataURL(file);
-    }
 }
