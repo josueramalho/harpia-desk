@@ -1,11 +1,14 @@
 flask
 flask_session
 flask-socketio
-eventlet  # Servidor assíncrono para SocketIO
+eventlet
 requests
-websocket-client  # Para o cliente de chat IRC da Twitch
-python-dotenv  # <-- Adicione esta linha
-obs-websocket-py
-pygame  # <-- Adicione esta linha
-pynput  # <-- Adicione esta linha
+websocket-client
+python-dotenv
+# Usando a biblioteca recomendada para OBS v5+
+obsws-python
+pygame
+pynput
 cryptography
+# Adicionado para validação de imagem (opcional, mas recomendado, ou use imghdr nativo)
+Pillow

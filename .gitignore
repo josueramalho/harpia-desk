@@ -1,1 +1,21 @@
+# --- Segurança e Chaves (CRÍTICO) ---
+*.pem
+*.key
+*.crt
+vts_token.json
 .env
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+venv/
+.pytest_cache/
+
+# --- Flask ---
+instance/
+.webassets-cache
+
+# --- Uploads (Ignorar imagens enviadas localmente para não subir ao git) ---
+# Mantém apenas o arquivo .gitkeep dentro de uploads se existir
+uploads/*
+!uploads/.gitkeep

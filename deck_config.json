@@ -215,6 +215,19 @@
                 "icon": "",
                 "is_stateful": false,
                 "label": "a"
+            },
+            "slot-15": {
+                "label": "AS",
+                "is_stateful": false,
+                "actions_on": [
+                    {
+                        "type": "open_deck",
+                        "params": {
+                            "deck_id": "obs"
+                        }
+                    }
+                ],
+                "actions_off": []
             }
         },
         "deck_1763437322324": {
@@ -254,6 +267,22 @@
                         }
                     }
                 ]
+            }
+        },
+        "obs": {
+            "slot-0": {
+                "label": "Voltar",
+                "icon": "fa-solid fa-arrow-left",
+                "is_stateful": false,
+                "actions_on": [
+                    {
+                        "type": "open_deck",
+                        "params": {
+                            "deck_id": "root"
+                        }
+                    }
+                ],
+                "actions_off": []
             }
         }
     },
